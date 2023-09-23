@@ -25,7 +25,7 @@ class City(BaseModel, Base):
 <<<<<<< HEAD
     __tablename__ = 'cities'
 
-    if storage_type = 'db':
+    if storage_type == 'db':
         name = Column(String(128), nullable=False)
         state_id = Column(String(60), nullable=False, ForeignKey('state.id'))
         places = relationship('Place', backref='cities', cascade='all, delete')

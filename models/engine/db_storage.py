@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-<<<<<<< HEAD
 """db storage engine"""
 
 from sqlalchemy import create_engine
@@ -13,6 +12,7 @@ from models.state import State
 from models.user import User
 from os import getenv
 
+
 if getenv('HBNB_TYPE_STORAGE') == 'db':
     from models.place import place_amenity
 
@@ -24,7 +24,7 @@ class DBStorage:
     '''database storage engine for mysql storage'''
     __engine = None
     __session = None
-=======
+
 """Module for database storage"""
 
 

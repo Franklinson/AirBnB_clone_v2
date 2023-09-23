@@ -1,13 +1,12 @@
 #!/usr/bin/python3
-"""__init__ magic method for models directory"""
-
-
+"""This module instantiates an object of class FileStorage"""
 import os
 
 
-types = os.environ.get("HBNB_TYPE_STORAGE")
-print(types)
-if types == 'db':
+type_storage = os.getenv('HBNB_TYPE_STORAGE')
+
+
+if type_storage == "db":
     from models.engine.db_storage import DBStorage
     storage = DBStorage()
 else:
