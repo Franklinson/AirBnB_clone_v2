@@ -1,114 +1,103 @@
 #!/usr/bin/python3
-"""db storage engine"""
+"""Database storage engine using SQLAlchemy with a mysql+mysqldb database
+connection.
+"""
 
+import os
+from models.base_model import Base
+from models.amenity import Amenity
+from models.city import City
+from models.place import Place
+from models.state import State
+from models.review import Review
+from models.user import User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
-from models.amenity import Amenity
-from models.base_model import Base
-from models.city import City
-from models.place import Place
-from models.review import Review
-from models.state import State
-from models.user import User
-from os import getenv
-
-
-if getenv('HBNB_TYPE_STORAGE') == 'db':
-    from models.place import place_amenity
-
-classes = {"User": User, "State": State, "City": City,
-           "Amenity": Amenity, "Place": Place, "Review": Review}
+name2class = {
+    'Amenity': Amenity,
+    'City': City,
+    'Place': Place,
+    'State': State,
+    'Review': Review,
+    'User': User
+}
 
 
 class DBStorage:
-    '''database storage engine for mysql storage'''
+    """Database Storage"""
     __engine = None
     __session = None
-
-"""Module for database storage"""
-
-
-from sqlalchemy import create_engine
-from models.base_model import Base
-from models.base_model import BaseModel
-from models.user import User
-from models.state import State
-from models.city import City
-from models.amenity import Amenity
-from models.place import Place
-from models.review import Review
-from sqlalchemy.orm import sessionmaker, Session, scoped_session
-import os
-
-
-class DBStorage:
-    """Database storage class"""
-    __engine = None
-    __session = None
-
-    classes = {
-            "State": State,
-            "City": City
-            # "User": User,
-            # "Place": Place,
-            # "Review": Review,
-            # "Amenity": Amenity
-         }
 
     def __init__(self):
-        """Constructor for class DBStorage"""
-        user = os.environ.get('HBNB_MYSQL_USER')
-        password = os.environ.get('HBNB_MYSQL_PWD')
-        host = os.environ.get('HBNB_MYSQL_HOST')
-        db = os.environ.get('HBNB_MYSQL_DB')
+        """Initializes the object"""
+        user = os.getenv('HBNB_MYSQL_USER')
+        passwd = os.getenv('HBNB_MYSQL_PWD')
+        host = os.getenv('HBNB_MYSQL_HOST')
+        database = os.getenv('HBNB_MYSQL_DB')
         self.__engine = create_engine('mysql+mysqldb://{}:{}@{}/{}'
-                                      .format(user, password, host, db),
-                                      pool_pre_ping=True)
-        if (os.environ.get('HBNB_ENV') == 'test'):
+                                      .format(user, passwd, host, database))
+        if os.getenv('HBNB_ENV') == 'test':
             Base.metadata.drop_all(self.__engine)
 
     def all(self, cls=None):
-        """query on the current database session
-        (self.__session) all objects"""
-
-        dicts = {}
-        if cls in self.classes.keys():
-            for row in self.__session.query(self.classes[cls]).all():
-                name = self.classes[cls].__name__
-                key = f"{name}.{row.id}"
-                dicts[key] = row
+        """returns a dictionary of all the objects present"""
+        if not self.__session:
+            self.reload()
+        objects = {}
+        if type(cls) == str:
+            cls = name2class.get(cls, None)
+        if cls:
+            for obj in self.__session.query(cls):
+                objects[obj.__class__.__name__ + '.' + obj.id] = obj
         else:
-            t = []
-            for k, v in self.classes.items():
-                t .append(self.__session.query(v).all())
-            for rows in t:
-                for row in rows:
-                    name = type(row).__name__
-                    key = f"{name}.{row.id}"
-                    dicts[key] = row
-        return dicts
+            for cls in name2class.values():
+                for obj in self.__session.query(cls):
+                    objects[obj.__class__.__name__ + '.' + obj.id] = obj
+        return objects
+
+    def reload(self):
+        """reloads objects from the database"""
+        session_factory = sessionmaker(bind=self.__engine,
+                                       expire_on_commit=False)
+        Base.metadata.create_all(self.__engine)
+        self.__session = scoped_session(session_factory)
 
     def new(self, obj):
-        """creating a new object"""
+        """creates a new object"""
         self.__session.add(obj)
 
     def save(self):
-        """commiting our changes"""
+        """saves the current session"""
         self.__session.commit()
 
     def delete(self, obj=None):
-        """delete current database session if not none"""
+        """deletes an object"""
+        if not self.__session:
+            self.reload()
         if obj:
             self.__session.delete(obj)
-
-    def reload(self):
-        """creates all database tables"""
-        Base.metadata.create_all(self.__engine)
-        Session = sessionmaker(bind=self.__engine,
-                               expire_on_commit=False)
-        sessions = scoped_session(Session)
-        self.__session = sessions
 
     def close(self):
         """Dispose of current session if active"""
         self.__session.remove()
+
+    def get(self, cls, id):
+        """Retrieve an object"""
+        if cls is not None and type(cls) is str and id is not None and\
+           type(id) is str and cls in name2class:
+            cls = name2class[cls]
+            result = self.__session.query(cls).filter(cls.id == id).first()
+            return result
+        else:
+            return None
+
+    def count(self, cls=None):
+        """Count number of objects in storage"""
+        total = 0
+        if type(cls) == str and cls in name2class:
+            cls = name2class[cls]
+            total = self.__session.query(cls).count()
+        elif cls is None:
+            for cls in name2class.values():
+                total += self.__session.query(cls).count()
+        return total
