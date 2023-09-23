@@ -9,12 +9,12 @@ app = Flask(__name__)
 
 
 @app.teardown_appcontext
-def teardown_appcontext(exception):
+def close(self):
     """Closes the current SQLAlchemy Session."""
     storage.close()
 
 
-@app.route('/cities_by_states',strict_slashes=False)
+@app.route('/cities_by_states', strict_slashes=False)
 def cities_by_states():
     """Display a list of states and their cities."""
     states = storage.all(State)
