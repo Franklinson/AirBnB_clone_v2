@@ -108,4 +108,7 @@ class DBStorage:
                                expire_on_commit=False)
         sessions = scoped_session(Session)
         self.__session = sessions
->>>>>>> de054e02cca2f4bcb0a7185a2468a28c1f596336
+
+    def close(self):
+        """Dispose of current session if active"""
+        self.__session.remove()

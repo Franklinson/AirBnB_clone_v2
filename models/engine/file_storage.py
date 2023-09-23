@@ -3,6 +3,13 @@
 
 
 import json
+from models.amenity import Amenity
+from models.base_model import BaseModel
+from models.city import City
+from models.place import Place
+from models.review import Review
+from models.state import State
+from models.user import User
 
 
 class FileStorage:
@@ -76,3 +83,7 @@ class FileStorage:
         if obj:
             k = "{}.{}".format(type(obj).__name__, obj.id)
             del FileStorage.__objects[k]
+
+    def close(self):
+        """Deserialize JSON file to objects"""
+        self.reload()
