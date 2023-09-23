@@ -1,26 +1,31 @@
 #!/usr/bin/python3
-"""Defines the review class"""
-
-
+""" holds class Review"""
+import models
 from models.base_model import BaseModel, Base
-from slqalchemy import Column, String, ForeignKey
+from os import getenv
+import sqlalchemy
+from sqlalchemy import Column, String
+from sqlalchemy.orm import relationship
+from sqlalchemy import ForeignKey
 
 
-class Review(BaseModel):
-    """This is a review
-    Attributes:
-        place_id: the place id
-        user_id: the user's id
-        text: the textfield for review
-    """
-    __tablename__ = 'reviews'
-
-    if storrage_type == 'db':
-        test = Column(String(1024), nullable=False)
-        place_id = Column(String(60), nullable=False, ForeignKey='places.id')
-        user_id = Column(String(60), nullable=False, ForeignKey='users.id')
-
+class Review(BaseModel, Base):
+    """This is a Review """
+    if getenv('HBNB_TYPE_STORAGE') == 'db':
+        __tablename__ = 'reviews'
+        text = Column(String(1024),
+                      nullable=False)
+        place_id = Column(String(60),
+                          ForeignKey('places.id'),
+                          nullable=False)
+        user_id = Column(String(60),
+                         ForeignKey('users.id'),
+                         nullable=False)
     else:
+        text = ""
         place_id = ""
         user_id = ""
-        text = ""
+
+    def __init__(self, *args, **kwargs):
+        """initializes Review"""
+        super().__init__(*args, **kwargs)
